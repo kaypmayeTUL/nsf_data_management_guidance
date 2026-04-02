@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSF Data Management &amp; Sharing Plan | Tulane University Libraries</title>
+<style>
+  :root {
+    --tulane-green: #285C4D;
+    --tulane-green-dark: #1A3D32;
+    --tulane-green-light: #3A7A68;
+    --tulane-green-pale: #E8F2EE;
+    --tulane-blue: #71C5E8;
+    --tulane-blue-dark: #4A9DB5;
+    --text-dark: #1C3530;
+    --text-mid: #3D6459;
+    --white: #FFFFFF;
+    --off-white: #F4F9F7;
+    --light-gray: #E8F2EE;
+    --gold: #D4A843;
+    --gold-light: #FBF3E0;
+    --red-alert: #C0392B;
+    --red-light: #FDECEA;
+    --teal: #2A8C72;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--off-white); color: var(--text-dark); line-height: 1.6; }
+  .nav-container { position: fixed; top: 0; left: 0; right: 0; background: var(--tulane-green); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  .nav-title { color: var(--white); font-size: 1.05rem; font-weight: 600; }
+  .nav-controls { display: flex; align-items: center; gap: 12px; }
+  .page-selector { padding: 7px 11px; border: 2px solid var(--tulane-blue); border-radius: 6px; background: var(--white); color: var(--tulane-green); font-size: 0.9rem; cursor: pointer; min-width: 360px; }
+  .nav-btn { background: var(--tulane-blue); color: var(--tulane-green-dark); border: none; padding: 7px 15px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: all 0.25s ease; }
+  .nav-btn:hover { background: var(--white); transform: translateY(-1px); }
+  .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .page-indicator { color: var(--tulane-blue); font-size: 0.85rem; min-width: 65px; text-align: center; }
+  .activity-tracker { position: fixed; top: 52px; right: 20px; display: flex; align-items: center; gap: 8px; background: rgba(26,61,50,0.93); padding: 5px 12px; border-radius: 0 0 8px 8px; z-index: 999; }
+  .tracker-label { color: var(--tulane-blue); font-size: 0.75rem; font-weight: 600; }
+  .tracker-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--tulane-green-light); color: var(--white); font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--tulane-blue); transition: all 0.3s ease; position: relative; }
+  .tracker-dot:hover::after { content: attr(data-label); position: absolute; top: 32px; right: 0; background: var(--tulane-green-dark); color: var(--white); font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; white-space: nowrap; z-index: 10; }
+  .tracker-dot.completed { background: var(--tulane-blue); border-color: var(--white); }
+  .tracker-dot.completed span { display: none; }
+  .progress-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.15); z-index: 1000; }
+  .progress-fill { height: 100%; background: var(--tulane-blue); transition: width 0.3s ease; }
+  .slides-wrapper { padding-top: 52px; }
+  .slide { display: none; min-height: calc(100vh - 52px); }
+  .slide.active { display: block; }
+  .title-slide { background: linear-gradient(135deg, var(--tulane-green-dark) 0%, var(--tulane-green) 60%, var(--tulane-green-light) 100%); display: flex; flex-direction: column; justify-content: center; padding: 60px 80px; min-height: calc(100vh - 52px); position: relative; overflow: hidden; }
+  .title-slide::before { content: ''; position: absolute; top: -100px; right: -80px; width: 500px; height: 500px; border-radius: 50%; background: rgba(113,197,232,0.08); }
+  .title-eyebrow { color: var(--tulane-blue); font-size: 0.85rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 18px; }
+  .title-slide h1 { color: var(--white); font-size: 3.2rem; font-weight: 700; line-height: 1.15; margin-bottom: 18px; max-width: 820px; }
+  .title-slide .subtitle { color: var(--tulane-blue); font-size: 1.3rem; margin-bottom: 44px; }
+  .title-badge { display: inline-block; background: var(--gold); color: var(--tulane-green-dark); font-size: 0.8rem; font-weight: 700; padding: 5px 14px; border-radius: 20px; margin-bottom: 26px; text-transform: uppercase; letter-spacing: 1px; }
+  .title-meta { display: flex; gap: 30px; flex-wrap: wrap; border-top: 1px solid rgba(113,197,232,0.3); padding-top: 26px; }
+  .title-meta-item { color: rgba(255,255,255,0.75); font-size: 0.95rem; }
+  .title-meta-item strong { color: var(--tulane-blue); }
+  .content-slide { background: var(--white); border-radius: 16px; margin: 24px; padding: 46px 54px; box-shadow: 0 4px 20px rgba(0,0,0,0.07); min-height: calc(100vh - 100px); }
+  .slide-header { margin-bottom: 28px; padding-bottom: 16px; border-bottom: 4px solid var(--tulane-blue); }
+  .slide-header h2 { color: var(--tulane-green); font-size: 2rem; font-weight: 700; line-height: 1.2; }
+  .slide-header .slide-subtitle { color: var(--text-mid); font-size: 1rem; margin-top: 5px; font-style: italic; }
+  .content-slide p { font-size: 1.08rem; line-height: 1.85; margin-bottom: 14px; }
+  .content-slide ul, .content-slide ol { margin: 14px 0 14px 28px; }
+  .content-slide li { font-size: 1.08rem; line-height: 1.78; margin-bottom: 9px; }
+  .content-slide strong { color: var(--tulane-green); font-weight: 600; }
+  .content-slide a { color: var(--tulane-blue-dark); font-weight: 600; }
+  .card-grid { display: grid; gap: 16px; margin-top: 18px; }
+  .card-grid-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card { background: var(--off-white); border-radius: 10px; padding: 20px 22px; border-left: 5px solid var(--tulane-green); box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+  .card.blue { border-left-color: var(--tulane-blue-dark); }
+  .card.teal { border-left-color: var(--teal); }
+  .card.dark { border-left-color: var(--tulane-green-dark); }
+  .card.gold { border-left-color: var(--gold); background: var(--gold-light); }
+  .card h3 { color: var(--tulane-green); font-size: 1.02rem; font-weight: 700; margin-bottom: 9px; }
+  .card.blue h3 { color: var(--tulane-blue-dark); }
+  .card.teal h3 { color: var(--teal); }
+  .card.dark h3 { color: var(--tulane-green-dark); }
+  .card p, .card li { font-size: 0.97rem; color: var(--text-dark); }
+  .card ul { margin: 8px 0 0 16px; }
+  .card li { margin-bottom: 5px; }
+  .card-num { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tulane-green); color: var(--white); font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px; }
+  .col-panel { background: var(--off-white); border-radius: 10px; padding: 20px 22px; border-top: 5px solid var(--tulane-green); }
+  .col-panel.blue-top { border-top-color: var(--tulane-blue-dark); }
+  .col-panel.red-top { border-top-color: var(--red-alert); }
+  .col-panel h3 { color: var(--tulane-green); font-size: 1.02rem; font-weight: 700; margin-bottom: 12px; }
+  .col-panel.blue-top h3 { color: var(--tulane-blue-dark); }
+  .col-panel.red-top h3 { color: var(--red-alert); }
+  .col-panel p, .col-panel li { font-size: 0.97rem; color: var(--text-dark); }
+  .col-panel ul { margin: 8px 0 0 16px; }
+  .col-panel li { margin-bottom: 6px; }
+  .callout { display: flex; gap: 14px; padding: 16px 20px; border-radius: 10px; margin: 18px 0; align-items: flex-start; }
+  .callout.info { background: var(--tulane-green-pale); border-left: 5px solid var(--tulane-green); }
+  .callout.warning { background: var(--gold-light); border-left: 5px solid var(--gold); }
+  .callout.alert { background: var(--red-light); border-left: 5px solid var(--red-alert); }
+  .callout.blue { background: #E3F4FB; border-left: 5px solid var(--tulane-blue-dark); }
+  .callout-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+  .callout p { font-size: 0.99rem; line-height: 1.7; margin: 0; }
+  .callout strong { color: var(--tulane-green); }
+  .callout.warning strong { color: #7A5A00; }
+  .callout.alert strong { color: var(--red-alert); }
+  .callout.blue strong { color: var(--tulane-blue-dark); }
+  .fair-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .fair-col { border-radius: 10px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.09); }
+  .fair-header { padding: 18px 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .fair-letter { font-size: 2.4rem; font-weight: 800; color: var(--white); line-height: 1; }
+  .fair-word { font-size: 0.92rem; font-weight: 700; color: rgba(255,255,255,0.88); }
+  .fair-body { background: var(--off-white); padding: 14px 16px; }
+  .fair-body ul { margin: 0; padding: 0; list-style: none; }
+  .fair-body li { font-size: 0.9rem; line-height: 1.55; margin-bottom: 7px; color: var(--text-dark); padding-left: 14px; position: relative; }
+  .fair-body li::before { content: '→'; position: absolute; left: 0; color: var(--tulane-green); font-weight: 700; font-size: 0.85rem; }
+  .data-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.97rem; }
+  .data-table th { background: var(--tulane-green); color: var(--white); padding: 11px 14px; text-align: left; font-weight: 600; }
+  .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--light-gray); vertical-align: top; line-height: 1.55; }
+  .data-table tr:nth-child(even) td { background: var(--off-white); }
+  .data-table tr:hover td { background: var(--tulane-green-pale); }
+  .timeline { display: flex; gap: 0; margin: 24px 0; }
+  .timeline-step { flex: 1; text-align: center; position: relative; padding: 0 8px; }
+  .timeline-step::after { content: '→'; position: absolute; right: -6px; top: 18px; font-size: 1.3rem; color: var(--tulane-blue); font-weight: 700; }
+  .timeline-step:last-child::after { display: none; }
+  .step-circle { width: 48px; height: 48px; border-radius: 50%; background: var(--tulane-green); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(40,92,77,0.3); }
+  .step-title { font-weight: 700; font-size: 0.9rem; color: var(--tulane-green); margin-bottom: 5px; }
+  .step-desc { font-size: 0.83rem; color: var(--text-mid); line-height: 1.5; }
+  .checklist { list-style: none; }
+  .checklist li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; border-radius: 6px; margin-bottom: 5px; font-size: 0.98rem; line-height: 1.5; background: var(--off-white); cursor: pointer; transition: background 0.15s; }
+  .checklist li:hover { background: var(--tulane-green-pale); }
+  .checklist li.done { text-decoration: line-through; color: var(--text-mid); background: #d4edda; }
+  .check-box { flex-shrink: 0; width: 18px; height: 18px; border: 2px solid var(--tulane-green); border-radius: 3px; margin-top: 2px; transition: all 0.2s; }
+  .checklist li.done .check-box { background: #27ae60; border-color: #27ae60; }
+  .activity-slide { background: linear-gradient(135deg, var(--tulane-green-dark), var(--tulane-green)); min-height: calc(100vh - 52px); padding: 40px 54px; }
+  .activity-badge { display: inline-block; background: var(--tulane-blue); color: var(--tulane-green-dark); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 1px; padding: 5px 14px; border-radius: 20px; margin-bottom: 14px; }
+  .activity-slide h2 { color: var(--white); font-size: 1.9rem; margin-bottom: 8px; }
+  .activity-intro { color: rgba(255,255,255,0.85); font-size: 1.04rem; margin-bottom: 24px; line-height: 1.7; max-width: 820px; }
+  .activity-card { background: rgba(255,255,255,0.97); border-radius: 12px; padding: 24px 28px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .activity-card h3 { color: var(--tulane-green); margin-bottom: 12px; font-size: 1.08rem; }
+  .activity-card p { color: var(--text-dark); font-size: 0.99rem; line-height: 1.75; }
+  .option-btn { background: var(--white); border: 2px solid var(--tulane-green); color: var(--tulane-green); border-radius: 7px; padding: 10px 15px; font-size: 0.94rem; cursor: pointer; font-weight: 500; text-align: left; line-height: 1.4; transition: all 0.22s ease; }
+  .option-btn:hover { background: var(--tulane-green-pale); }
+  .option-btn.selected-correct { background: #d4edda; border-color: #27ae60; color: #145a32; }
+  .option-btn.selected-wrong { background: var(--red-light); border-color: var(--red-alert); color: #7B241C; }
+  .feedback-box { display: none; margin-top: 12px; padding: 12px 16px; border-radius: 7px; font-size: 0.97rem; font-weight: 500; line-height: 1.6; }
+  .feedback-box.correct { background: #d4edda; color: #145a32; border: 1px solid #27ae60; }
+  .feedback-box.incorrect { background: var(--red-light); color: #7B241C; border: 1px solid var(--red-alert); }
+  .text-input { width: 100%; min-height: 90px; border: 2px solid var(--tulane-green); border-radius: 7px; padding: 10px 13px; font-family: inherit; font-size: 0.97rem; line-height: 1.6; resize: vertical; margin-top: 8px; color: var(--text-dark); }
+  .text-input:focus { outline: none; border-color: var(--tulane-blue-dark); }
+  .submit-btn { background: var(--tulane-green); color: var(--white); border: none; border-radius: 7px; padding: 10px 22px; margin-top: 10px; font-size: 0.94rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+  .submit-btn:hover { background: var(--tulane-green-dark); }
+  .complete-btn { background: var(--tulane-blue); color: var(--tulane-green-dark); border: none; border-radius: 7px; padding: 9px 18px; margin-top: 10px; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+  .complete-btn:hover { background: var(--white); }
+  .resource-card { display: flex; align-items: flex-start; gap: 14px; background: var(--off-white); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; border-left: 5px solid var(--tulane-blue-dark); transition: transform 0.2s; }
+  .resource-card:hover { transform: translateX(3px); }
+  .resource-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .resource-card h3 { color: var(--tulane-green); font-size: 0.99rem; font-weight: 700; margin-bottom: 3px; }
+  .resource-card a { color: var(--tulane-blue-dark); font-size: 0.88rem; }
+  .resource-card p { font-size: 0.91rem; color: var(--text-mid); margin-top: 3px; }
+  .element-row { display: flex; gap: 0; border-radius: 8px; overflow: hidden; margin-bottom: 10px; border: 1px solid var(--light-gray); }
+  .element-num-box { background: var(--tulane-green); color: var(--white); font-weight: 800; font-size: 1rem; min-width: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .element-title-box { background: var(--tulane-green-pale); color: var(--tulane-green); font-weight: 700; font-size: 0.95rem; padding: 12px 16px; min-width: 220px; display: flex; align-items: center; border-right: 1px solid var(--light-gray); }
+  .element-desc-box { flex: 1; padding: 12px 16px; color: var(--text-dark); font-size: 0.96rem; line-height: 1.6; background: var(--white); }
+  .dir-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; }
+  .dir-badge.strict { background: #fce4d6; color: #7B1F0A; }
+  .dir-badge.moderate { background: var(--gold-light); color: #7A5A00; }
+  .final-slide { background: linear-gradient(135deg, var(--tulane-green-dark) 0%, var(--tulane-green) 100%); min-height: calc(100vh - 52px); display: flex; flex-direction: column; justify-content: center; padding: 60px 80px; position: relative; overflow: hidden; }
+  .final-slide::before { content: ''; position: absolute; top: -80px; right: -80px; width: 400px; height: 400px; border-radius: 50%; background: rgba(113,197,232,0.08); }
+  .final-slide h2 { color: var(--white); font-size: 2.8rem; font-weight: 900; margin-bottom: 10px; }
+  .final-slide .final-sub { color: var(--tulane-blue); font-size: 1.22rem; margin-bottom: 38px; }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 720px; }
+  .contact-item { display: flex; align-items: center; gap: 10px; color: var(--white); font-size: 1rem; }
+  .contact-item a { color: var(--tulane-blue); }
+  .checklist-section h3 { color: var(--tulane-green); border-bottom: 2px solid var(--tulane-blue); padding-bottom: 6px; margin-bottom: 12px; margin-top: 20px; font-size: 1rem; }
+  .checklist-section:first-child h3 { margin-top: 0; }
+  @media (max-width: 900px) {
+    .content-slide { padding: 26px 22px; margin: 10px; }
+    .title-slide { padding: 36px 28px; }
+    .title-slide h1 { font-size: 2.1rem; }
+    .fair-grid, .two-col, .card-grid-2, .card-grid-3 { grid-template-columns: 1fr; }
+    .page-selector { min-width: 200px; }
+    .timeline { flex-wrap: wrap; }
+    .timeline-step { min-width: 45%; }
+    .timeline-step::after { display: none; }
+    .element-title-box { min-width: 130px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav-container">
+  <div class="nav-title">NSF Data Management &amp; Sharing Plan</div>
+  <div class="nav-controls">
+    <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">&#8592; Previous</button>
+    <select class="page-selector" id="slideSelector" onchange="goToSlide(this.value)">
+      <option value="0">1. Introduction</option>
+      <option value="1">2. Learning Objectives</option>
+      <option value="2">3. NSF Data Sharing Policy Overview</option>
+      <option value="3">4. Who Must Include a DMP?</option>
+      <option value="4">5. What Counts as "Data"?</option>
+      <option value="5">6. The Five Required DMP Elements</option>
+      <option value="6">7. Directorate-Specific Requirements</option>
+      <option value="7">8. 2026 Updates: PAPPG Supplement 2 &amp; Research.gov</option>
+      <option value="8">9. FAIR Data Principles</option>
+      <option value="9">10. Metadata Standards</option>
+      <option value="10">11. Choosing a Data Repository</option>
+      <option value="11">12. Human Subjects &amp; Sensitive Data</option>
+      <option value="12">13. Peer Review &amp; Compliance</option>
+      <option value="13">14. Sample DMP Walk-Through</option>
+      <option value="14">15. Activity 1: Match the Element</option>
+      <option value="15">16. Activity 2: Which Directorate?</option>
+      <option value="16">17. Activity 3: Draft Your DMP</option>
+      <option value="17">18. Tools &amp; Resources</option>
+      <option value="18">19. Quick-Reference Checklist</option>
+      <option value="19">20. Wrap-Up &amp; Contact</option>
+    </select>
+    <span class="page-indicator" id="pageIndicator">1 / 20</span>
+    <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next &#8594;</button>
+  </div>
+</nav>
+
+<div class="activity-tracker">
+  <span class="tracker-label">Activities:</span>
+  <div class="tracker-dot" id="dot1" data-label="Match the Element" onclick="goToSlide(14)"><span>1</span></div>
+  <div class="tracker-dot" id="dot2" data-label="Which Directorate?" onclick="goToSlide(15)"><span>2</span></div>
+  <div class="tracker-dot" id="dot3" data-label="Draft Your DMP" onclick="goToSlide(16)"><span>3</span></div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="slides-wrapper">
+
+<!-- SLIDE 1: TITLE -->
+<section class="slide active" id="slide-0">
+  <div class="title-slide">
+    <div class="title-eyebrow">Research Data Services · Howard-Tilton Memorial Library</div>
+    <h1>NSF Data Management &amp; Sharing Plan</h1>
+    <div class="subtitle">Requirements, Best Practices, and 2026 Policy Updates</div>
+    <div class="title-badge">⚡ Updated: PAPPG 24-1 Supplement 2 · Effective Jan 22, 2026</div>
+    <div class="title-meta">
+      <div class="title-meta-item"><strong>Funder:</strong> National Science Foundation</div>
+      <div class="title-meta-item"><strong>Required since:</strong> 2011 (all NSF proposals)</div>
+      <div class="title-meta-item"><strong>Plan length:</strong> 2 pages maximum</div>
+      <div class="title-meta-item"><strong>Howard-Tilton Library · Tulane University · 2026</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 2: OBJECTIVES -->
+<section class="slide" id="slide-1">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Learning Objectives</h2><div class="slide-subtitle">By the end of this session, you will be able to:</div></div>
+    <div class="card-grid card-grid-2">
+      <div class="card"><div class="card-num">1</div><h3>Explain the NSF Data Sharing Policy</h3><p>Describe what NSF expects from investigators regarding data management, sharing, and access — and how requirements differ from NIH.</p></div>
+      <div class="card blue"><div class="card-num" style="background:var(--tulane-blue-dark);">2</div><h3>Identify the Five Required Elements</h3><p>Know what content must be addressed in every NSF DMP under PAPPG Chapter II.D.2.i.ii general guidelines.</p></div>
+      <div class="card teal"><div class="card-num" style="background:var(--teal);">3</div><h3>Navigate Directorate-Specific Requirements</h3><p>Locate additional requirements from your NSF directorate (BIO, SBE, GEO, ENG, CISE, etc.) and understand why they vary.</p></div>
+      <div class="card dark"><div class="card-num" style="background:var(--tulane-green-dark);">4</div><h3>Apply 2026 Policy Updates</h3><p>Understand the PAPPG Supplement 2 changes effective January 22, 2026, including the Research.gov DMP tool launching April 27, 2026.</p></div>
+      <div class="card"><div class="card-num">5</div><h3>Select Repositories &amp; Metadata Standards</h3><p>Choose suitable repositories and metadata standards for your data type and align them with FAIR data principles.</p></div>
+      <div class="card blue"><div class="card-num" style="background:var(--tulane-blue-dark);">6</div><h3>Use Library &amp; DMPTool Support</h3><p>Identify tools (DMPTool, NSF-PAR) and library services available at Tulane to help write, review, and improve your DMP.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 3: POLICY OVERVIEW -->
+<section class="slide" id="slide-2">
+  <div class="content-slide">
+    <div class="slide-header"><h2>NSF Data Sharing Policy Overview</h2><div class="slide-subtitle">Required since 2011 — reinforced and expanded through PAPPG updates in 2025 and 2026</div></div>
+    <p>The National Science Foundation has required Data Management Plans since 2011. The policy is grounded in NSF's expectation that investigators share research products with the broader scientific community.</p>
+    <div class="callout info">
+      <div class="callout-icon">📋</div>
+      <p><strong>Core expectation (PAPPG XI.D.4):</strong> NSF-funded investigators are expected to share with other researchers, at no more than incremental cost and within a reasonable time, the primary data, samples, physical collections, software, inventions, curriculum materials, and other supporting materials created or gathered in the course of work under NSF awards.</p>
+    </div>
+    <div class="two-col">
+      <div class="col-panel">
+        <h3>📄 The DMP Document</h3>
+        <ul>
+          <li>A supplementary document of <strong>no more than two pages</strong> labeled "Data Management and Sharing Plan"</li>
+          <li>Submitted in the supplementary documents section — <strong>not</strong> counted against the project description page limit</li>
+          <li>Proposals without a DMP <strong>cannot be submitted</strong> and will be returned without review</li>
+          <li>Even if the project generates no data, a <strong>justification document</strong> must replace the DMP</li>
+        </ul>
+      </div>
+      <div class="col-panel blue-top">
+        <h3>📅 Key Policy Milestones</h3>
+        <ul>
+          <li><strong>2011:</strong> DMPs first required for all NSF proposals</li>
+          <li><strong>2016:</strong> Public access requirement added — publications in NSF-PAR</li>
+          <li><strong>2023:</strong> DMPs subject to peer review as part of merit review</li>
+          <li><strong>Dec 8, 2025 (Suppl. 1):</strong> Embargo removed; publications freely available at time of publication</li>
+          <li><strong>Jan 22, 2026 (Suppl. 2):</strong> Data sharing at time of publication required; Research.gov tool announced</li>
+          <li><strong>Apr 27, 2026:</strong> New Research.gov DMP tool launches — becomes required submission method</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout warning" style="margin-top:6px;">
+      <div class="callout-icon">⚡</div>
+      <p><strong>Key difference from NIH:</strong> NSF DMPs are evaluated by peer reviewers as part of merit review, and past DMP performance is evaluated in subsequent proposals under "Results from Prior NSF Support." Generic, boilerplate plans receive poor scores.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4: WHO MUST COMPLY -->
+<section class="slide" id="slide-3">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Who Must Include a DMP?</h2><div class="slide-subtitle">Nearly all NSF proposals — with very limited exceptions</div></div>
+    <div class="callout info">
+      <div class="callout-icon">✅</div>
+      <p><strong>The short answer:</strong> All full research proposals submitted to NSF must include a DMP. This applies regardless of award size, type of data generated, or directorate. There is no funding threshold equivalent to NIH's old $500K rule.</p>
+    </div>
+    <div class="two-col">
+      <div class="col-panel">
+        <h3>✅ Must Include a DMP</h3>
+        <ul>
+          <li>All standard research grants (including collaborative proposals)</li>
+          <li>CAREER awards and other early-career mechanisms</li>
+          <li>Major Research Instrumentation (MRI) proposals</li>
+          <li>RAPID, EAGER, and RAISE proposals</li>
+          <li>REU supplements and international research proposals</li>
+          <li>Proposals generating no data (submit a justification instead)</li>
+        </ul>
+      </div>
+      <div class="col-panel blue-top">
+        <h3>⚠️ Special Situations</h3>
+        <ul>
+          <li><strong>No data generated:</strong> Submit a brief justification (e.g., purely theoretical work, workshop with no report) — a placeholder is still required</li>
+          <li><strong>Sensitive data:</strong> Privacy, confidentiality, security, IP, or legal restrictions are acceptable — but must be documented and justified in the DMP</li>
+          <li><strong>Industry-collaborative data:</strong> Proprietary restrictions must be explained in the DMP at time of original submission</li>
+          <li><strong>Program solicitations:</strong> Always check the FOA — some programs override or supplement PAPPG defaults</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:6px;">
+      <div class="callout-icon">💡</div>
+      <p>Unlike NIH, NSF does <strong>not</strong> have an exemption list of activity codes. If you submit to NSF, you need a DMP. The only question is what your specific directorate or program requires beyond the PAPPG minimum.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5: WHAT COUNTS AS DATA -->
+<section class="slide" id="slide-4">
+  <div class="content-slide">
+    <div class="slide-header"><h2>What Counts as "Data" Under NSF?</h2><div class="slide-subtitle">NSF's scope is broader than NIH's — explicitly includes samples, software, and curriculum materials</div></div>
+    <div class="callout info">
+      <div class="callout-icon">📖</div>
+      <p><strong>NSF definition:</strong> "Data are defined as the recorded factual material commonly accepted in the scientific community as necessary to validate research findings. This includes original data, but also 'metadata' (e.g., experimental protocols, code written for statistical analyses, etc.)."</p>
+    </div>
+    <div class="card-grid card-grid-3" style="margin-top:10px;">
+      <div class="card"><h3>📊 Primary Data</h3><p>Experimental results, observational data, survey responses, interview transcripts, field measurements, sensor data, images, audio/video recordings</p></div>
+      <div class="card blue"><h3>🧪 Samples &amp; Collections</h3><p>Physical samples, specimens, biological materials, geological cores, archaeological artifacts, and physical collections created or gathered under the award</p></div>
+      <div class="card teal"><h3>💻 Software &amp; Code</h3><p>Source code, scripts, algorithms, computational models, and workflows developed as part of the research — especially if needed to reproduce findings</p></div>
+      <div class="card dark"><h3>📐 Curriculum Materials</h3><p>Educational content, teaching modules, and workshop materials developed with NSF funding — particularly relevant for EDU and EHR directorate proposals</p></div>
+      <div class="card"><h3>📝 Metadata &amp; Documentation</h3><p>Digital lab notebooks, experimental protocols, data dictionaries, codebooks, and README files needed to interpret and reproduce the research</p></div>
+      <div class="card gold"><h3>📄 Publications &amp; Outputs</h3><p>Author Accepted Manuscripts deposited in NSF-PAR upon acceptance with no embargo (as of Dec 8, 2025); datasets supporting publications shared at time of publication (as of Jan 22, 2026)</p></div>
+    </div>
+    <div class="callout warning" style="margin-top:14px;">
+      <div class="callout-icon">💡</div>
+      <p><strong>NSF vs. NIH:</strong> NIH explicitly excludes preliminary analyses, drafts, and lab notebooks from its definition of "scientific data." NSF's scope is broader — digital lab notebooks and metadata are considered part of your data products and should be addressed in your DMP.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6: FIVE ELEMENTS -->
+<section class="slide" id="slide-5">
+  <div class="content-slide">
+    <div class="slide-header"><h2>The Five Required DMP Elements</h2><div class="slide-subtitle">PAPPG II.D.2.i.ii — general guidelines applicable to all NSF proposals</div></div>
+    <p>Every NSF DMP must address these five categories of information. Directorate-specific requirements add detail — but all five must be present in some form in every DMP.</p>
+    <div class="element-row">
+      <div class="element-num-box">1</div>
+      <div class="element-title-box">Types of Research Products</div>
+      <div class="element-desc-box">Describe the types of data, samples, physical collections, software, curriculum materials, and other materials to be produced. Include estimated formats, volumes, and any specialized conditions for collection or storage.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box" style="background:var(--tulane-blue-dark);">2</div>
+      <div class="element-title-box" style="color:var(--tulane-blue-dark);">Standards for Data &amp; Metadata</div>
+      <div class="element-desc-box">Identify the standards to be used for data and metadata format and content. If no adequate community standard exists, document this and describe your proposed documentation approach or remedy.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box" style="background:var(--teal);">3</div>
+      <div class="element-title-box" style="color:var(--teal);">Policies for Access &amp; Sharing</div>
+      <div class="element-desc-box">Describe policies for data access and sharing, including protections for privacy, confidentiality, security, intellectual property, or other rights. Address any restrictions and justify them. Per Supplement 2, datasets supporting publications must be shared at time of publication.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box" style="background:var(--tulane-green-dark);">4</div>
+      <div class="element-title-box" style="color:var(--tulane-green-dark);">Policies for Reuse &amp; Redistribution</div>
+      <div class="element-desc-box">Describe policies for reuse, redistribution, and the production of derivatives. Address licensing (CC0, CC-BY, MIT License for software), attribution requirements, and any restrictions on how others may use or build on the data.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box">5</div>
+      <div class="element-title-box">Plans for Archiving &amp; Preservation</div>
+      <div class="element-desc-box">Describe plans for archiving data, samples, and other research products and for preserving access to them. Identify a specific repository, address long-term preservation commitments, and explain how access will be maintained after the award ends.</div>
+    </div>
+    <div class="callout warning" style="margin-top:14px;">
+      <div class="callout-icon">📌</div>
+      <p><strong>Important:</strong> These five elements are the <em>minimum</em>. Your directorate, division, or program solicitation may require significantly more specificity. DMPs that are generic and do not address project-specific data will receive poor peer review scores.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 7: DIRECTORATE REQUIREMENTS -->
+<section class="slide" id="slide-6">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Directorate-Specific Requirements</h2><div class="slide-subtitle">NSF's decentralized structure means DMP expectations vary significantly by directorate and program</div></div>
+    <p>NSF directorates and some divisions have issued their own DMP guidance that supplements the PAPPG minimum. If your directorate has specific guidance, <strong>you must follow it</strong>.</p>
+    <table class="data-table">
+      <thead><tr><th>Directorate / Office</th><th>Key Additional Requirements</th><th>Level</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BIO — Biological Sciences</strong></td><td>Address biological samples separately; specify domain repositories (GenBank, EDI, SESAR); genomic data may require additional expectations similar to NIH GDS policy</td><td><span class="dir-badge strict">Strict</span></td></tr>
+        <tr><td><strong>GEO — Geosciences</strong></td><td>Strong preference for domain repositories (BCO-DMO for ocean science, IEDA for earth/polar); specific metadata standards required by sub-directorate; OPP mandates Arctic/Antarctic Data Centers</td><td><span class="dir-badge strict">Strict</span></td></tr>
+        <tr><td><strong>SBE — Social, Behavioral &amp; Economic Sciences</strong></td><td>Must address human subjects protections, consent language, and de-identification; ICPSR recommended for quantitative data; qualitative data needs special consideration for controlled access</td><td><span class="dir-badge strict">Strict</span></td></tr>
+        <tr><td><strong>OPP — Office of Polar Programs</strong></td><td>Mandatory deposit to Arctic Data Center or US Antarctic Program Data Center; data publicly available within 2 years of collection; physical samples in SESAR with IGSNs</td><td><span class="dir-badge strict">Strict</span></td></tr>
+        <tr><td><strong>ENG — Engineering</strong></td><td>Addresses five essential elements with discipline-specific sub-questions; re3data.org recommended for repository selection; strong emphasis on software and code sharing</td><td><span class="dir-badge moderate">Moderate</span></td></tr>
+        <tr><td><strong>CISE — Computer &amp; Information Science &amp; Engineering</strong></td><td>Strong emphasis on software and code sharing; open-source licensing encouraged (MIT, Apache); GitHub + Zenodo DOI combinations accepted; community data standards vary widely</td><td><span class="dir-badge moderate">Moderate</span></td></tr>
+        <tr><td><strong>MPS — Math &amp; Physical Sciences</strong></td><td>Division-specific guidance: AST (astronomy), CHE (chemistry), DMR (materials), DMS (math), PHY (physics) each have separate requirements; DMR provides an optional DMP template PDF</td><td><span class="dir-badge moderate">Moderate</span></td></tr>
+        <tr><td><strong>EDU — STEM Education</strong></td><td>Must address curriculum materials and educational data separately; student data requires FERPA/PPRA considerations; ICPSR or ERIC recommended for educational datasets</td><td><span class="dir-badge moderate">Moderate</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout info" style="margin-top:14px;">
+      <div class="callout-icon">💡</div>
+      <p>Always check <strong>nsf.gov/funding/data-management-plan</strong> for your directorate's guidance page, and read the specific program solicitation (FOA) for any requirements that override the directorate defaults. Contact your program officer if uncertain.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 8: 2026 UPDATES -->
+<section class="slide" id="slide-7">
+  <div class="content-slide">
+    <div class="slide-header"><h2>2026 Policy Updates: PAPPG Supplement 2</h2><div class="slide-subtitle">Effective January 22, 2026 — major changes to publication and data sharing timelines</div></div>
+    <div class="callout warning">
+      <div class="callout-icon">⚡</div>
+      <p><strong>PAPPG 24-1 Supplement 2</strong> was released January 22, 2026 and applies to all financial assistance awarded on or after that date. It implements NSF's "Gold Standard Science" public access plan and significantly tightens data and publication sharing requirements.</p>
+    </div>
+    <div class="two-col">
+      <div class="col-panel">
+        <h3>📰 Publications (AAMs)</h3>
+        <ul>
+          <li>Author Accepted Manuscripts must be deposited in <strong>NSF-PAR upon acceptance</strong></li>
+          <li><strong>No embargo</strong> — publications freely available at time of publication (Supplement 1, Dec 8, 2025)</li>
+          <li>Machine-readable XML metadata required in NSF-PAR</li>
+          <li>Persistent identifiers (DOIs, NSF-PAR IDs) must appear in project reports</li>
+        </ul>
+      </div>
+      <div class="col-panel blue-top">
+        <h3>💾 Datasets</h3>
+        <ul>
+          <li><strong>Datasets supporting NSF-funded publications must be shared at time of publication</strong> — no longer "within a reasonable time"</li>
+          <li>Data must be deposited in repositories that assign persistent identifiers (DOIs)</li>
+          <li>Direct dataset entry in Research.gov project reports is <strong>prohibited</strong> — use repository DOIs instead</li>
+          <li>Any exceptions must be justified in the DMSP at time of original proposal submission</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout blue" style="margin-top:10px;">
+      <div class="callout-icon">🛠️</div>
+      <p><strong>Research.gov DMP Tool — Launching April 27, 2026:</strong> NSF will release a new online tool within Research.gov for creating and submitting DMSPs. Until then, proposals must continue to upload the DMP as a 2-page PDF. Once the tool launches, it becomes the required submission method.</p>
+    </div>
+    <div class="callout info" style="margin-top:6px;">
+      <div class="callout-icon">📌</div>
+      <p><strong>What to include in your DMP now:</strong> Explicitly state that datasets supporting publications will be deposited in a DOI-issuing repository and made available at time of publication. Any exceptions — proprietary data, privacy constraints, IP restrictions — must be described and justified upfront.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 9: FAIR -->
+<section class="slide" id="slide-8">
+  <div class="content-slide">
+    <div class="slide-header"><h2>FAIR Data Principles</h2><div class="slide-subtitle">NSF encourages FAIR practices — especially critical as peer reviewers evaluate your DMP</div></div>
+    <p>While NSF does not require FAIR compliance by name (unlike NIH), FAIR principles align directly with what peer reviewers look for. A plan that is findable, accessible, interoperable, and reusable will score well in review.</p>
+    <div class="fair-grid">
+      <div class="fair-col">
+        <div class="fair-header" style="background:var(--tulane-green);"><span class="fair-letter">F</span><span class="fair-word">Findable</span></div>
+        <div class="fair-body"><ul><li>Assign a DOI or accession number via a repository</li><li>Use rich, descriptive metadata</li><li>Register data in an indexed, searchable catalog</li></ul></div>
+      </div>
+      <div class="fair-col">
+        <div class="fair-header" style="background:var(--tulane-blue-dark);"><span class="fair-letter">A</span><span class="fair-word">Accessible</span></div>
+        <div class="fair-body"><ul><li>Data retrievable via open standard protocols</li><li>Metadata accessible even if data is restricted</li><li>Clear authentication/authorization process</li></ul></div>
+      </div>
+      <div class="fair-col">
+        <div class="fair-header" style="background:var(--teal);"><span class="fair-letter">I</span><span class="fair-word">Interoperable</span></div>
+        <div class="fair-body"><ul><li>Use community-standard file formats</li><li>Include controlled vocabularies in metadata</li><li>Enable integration with other datasets</li></ul></div>
+      </div>
+      <div class="fair-col">
+        <div class="fair-header" style="background:var(--tulane-green-dark);"><span class="fair-letter">R</span><span class="fair-word">Reusable</span></div>
+        <div class="fair-body"><ul><li>Clear license (CC0, CC-BY, MIT for code)</li><li>Detailed provenance documentation</li><li>Meets community standards for your field</li></ul></div>
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:18px;">
+      <div class="callout-icon">💡</div>
+      <p>Peer reviewers ask: Can another researcher find this data? Access it? Understand and use it? Build on it? Framing your DMP around FAIR principles — even without using that language — will strengthen your proposal and demonstrate methodological rigor.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 10: METADATA STANDARDS -->
+<section class="slide" id="slide-9">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Metadata Standards</h2><div class="slide-subtitle">Required in DMP Element 2 — "If no standard exists, document this and describe your proposed remedy"</div></div>
+    <p>NSF requires you to identify the <strong>standards to be used for data and metadata format and content</strong>. Your chosen standards should reflect best practices in your research community. If no community standard exists, say so explicitly and describe how you will document your data instead.</p>
+    <table class="data-table">
+      <thead><tr><th>Standard / Schema</th><th>Discipline / Data Type</th><th>Relevant NSF Directorate</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Dublin Core</strong></td><td>General / cross-disciplinary; generalist repositories (Zenodo, OSF)</td><td>Any directorate using generalist repositories</td></tr>
+        <tr><td><strong>DataCite Metadata Schema</strong></td><td>Research data DOI registration; Zenodo, Dryad, Figshare</td><td>All directorates; especially CISE, ENG</td></tr>
+        <tr><td><strong>DDI (Data Documentation Initiative)</strong></td><td>Social science, survey &amp; quantitative data; ICPSR</td><td>SBE, EDU</td></tr>
+        <tr><td><strong>EML (Ecological Metadata Language)</strong></td><td>Ecology, environmental science; EDI, DataONE</td><td>BIO (DEB, IOS), GEO</td></tr>
+        <tr><td><strong>Darwin Core</strong></td><td>Biodiversity, species occurrence data; GBIF, iDigBio</td><td>BIO (collections, systematics)</td></tr>
+        <tr><td><strong>ISO 19115 / CF Conventions / FGDC</strong></td><td>Geospatial, atmospheric, oceanographic data</td><td>GEO, OPP</td></tr>
+        <tr><td><strong>SESAR / IGSN</strong></td><td>Physical samples and specimens; geoscience, earth science</td><td>GEO, OPP, BIO</td></tr>
+        <tr><td><strong>BIDS (Brain Imaging Data Structure)</strong></td><td>Neuroimaging, fMRI, EEG data; OpenNeuro</td><td>SBE (SPRF, developmental)</td></tr>
+        <tr><td><strong>CIF / CSD</strong></td><td>Crystallographic and structural chemistry data</td><td>MPS/CHE, MPS/DMR</td></tr>
+        <tr><td><strong>MIAME / MINSEQE</strong></td><td>Genomics, microarray, sequencing data; GenBank, GEO, SRA</td><td>BIO, MPS/MCB</td></tr>
+        <tr><td><strong>VO Standards (FITS, VOTable)</strong></td><td>Astronomical data; NOIRLab, MAST, NASA archives</td><td>MPS/AST</td></tr>
+        <tr><td><strong>README files / Data dictionaries</strong></td><td>Any field lacking a community standard — generalist fallback</td><td>All — especially for novel or interdisciplinary work</td></tr>
+      </tbody>
+    </table>
+    <div class="callout info" style="margin-top:14px;">
+      <div class="callout-icon">💡</div>
+      <p><strong>Tip:</strong> Many domain repositories (BCO-DMO, ICPSR, Arctic Data Center, EDI) enforce their metadata standards during submission. Choosing the right repository often means your metadata standard is determined for you — simplifying Element 2 considerably.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 11: REPOSITORIES -->
+<section class="slide" id="slide-10">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Choosing a Data Repository</h2><div class="slide-subtitle">NSF does not endorse specific repositories — but peer reviewers expect a well-justified, domain-appropriate choice</div></div>
+    <p>NSF explicitly states it does not endorse any specific repository. However, your DMP should name a <strong>specific repository</strong> for each major data type and explain why it is appropriate. Vague references to "an appropriate repository" will not satisfy reviewers.</p>
+    <table class="data-table">
+      <thead><tr><th>Repository</th><th>Data Type</th><th>NSF Directorate</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Arctic Data Center</strong> (arcticdata.io)</td><td>Arctic / polar research data</td><td>OPP</td><td>Mandatory for OPP-funded polar research; uses EML metadata</td></tr>
+        <tr><td><strong>BCO-DMO</strong> (bco-dmo.org)</td><td>Biological &amp; chemical oceanography</td><td>GEO/OCE</td><td>Strongly preferred; data managers help with submission process</td></tr>
+        <tr><td><strong>EDI / DataONE</strong> (edirepository.org)</td><td>Ecological &amp; environmental data</td><td>BIO/DEB, GEO</td><td>Uses EML; long-term NSF-funded data infrastructure</td></tr>
+        <tr><td><strong>ICPSR</strong> (icpsr.umich.edu)</td><td>Social science, survey, quantitative</td><td>SBE, EDU</td><td>Restricted access options for sensitive data; uses DDI metadata</td></tr>
+        <tr><td><strong>GenBank / NCBI SRA / GEO</strong></td><td>Genomic, sequence, expression data</td><td>BIO, MPS/MCB</td><td>Free; widely required by journals and funding agencies</td></tr>
+        <tr><td><strong>SESAR</strong> (geosamples.org)</td><td>Physical samples and specimens</td><td>GEO, BIO (collections)</td><td>Issues IGSNs (International Geo Sample Numbers)</td></tr>
+        <tr><td><strong>MAST / STScI</strong> (archive.stsci.edu)</td><td>Astronomical data (HST, JWST)</td><td>MPS/AST</td><td>NSF-funded facility; FITS format standard</td></tr>
+        <tr><td><strong>Zenodo</strong> (zenodo.org)</td><td>Any data type; generalist fallback</td><td>All directorates</td><td>Free; DOIs assigned; 50GB per record; CERN-hosted</td></tr>
+        <tr><td><strong>Dryad</strong> (datadryad.org)</td><td>Biology, ecology, evolutionary science</td><td>BIO, GEO</td><td>Publication-linked; CC0 license required; submission fee applies</td></tr>
+        <tr><td><strong>OSF</strong> (osf.io)</td><td>Social science, education, psychology</td><td>SBE, EDU</td><td>Free; DOIs via OSF Registrations; supports pre-registration</td></tr>
+      </tbody>
+    </table>
+    <div class="callout info" style="margin-top:14px;">
+      <div class="callout-icon">🔍</div>
+      <p>Use <strong>re3data.org</strong> (the Registry of Research Data Repositories) to search for domain-appropriate repositories. NSF ENG specifically recommends it. Filter by subject, data type, and country to find certified repositories with persistent identifiers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 12: HUMAN SUBJECTS -->
+<section class="slide" id="slide-11">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Human Subjects &amp; Sensitive Data</h2><div class="slide-subtitle">DMP Element 3 — access and sharing policies must address privacy and confidentiality protections</div></div>
+    <p>If your research involves human subjects, your DMP must explicitly address how you will protect participant privacy, rights, and confidentiality while still fulfilling NSF's data sharing expectations.</p>
+    <div class="two-col">
+      <div class="col-panel">
+        <h3>📋 Consent Language</h3>
+        <p>Consent forms should anticipate future data sharing. Include language indicating that de-identified data may be deposited in a public or controlled-access repository. IRBs increasingly expect this language in consent documents for NSF-funded research.</p>
+        <p style="margin-top:8px;">For existing data, document whether prior consent allows secondary use and sharing — and if not, explain why sharing is limited.</p>
+      </div>
+      <div class="col-panel blue-top">
+        <h3>🔒 De-identification &amp; Controlled Access</h3>
+        <p>Data shared publicly must be de-identified following recognized standards (HIPAA Safe Harbor, expert determination). Controlled-access repositories (ICPSR restricted collections, NACDA, secure enclaves) are appropriate for data that cannot be fully de-identified.</p>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top: 0;">
+      <div class="col-panel">
+        <h3>📚 FERPA and Student Data</h3>
+        <p>Education research involving student records is subject to FERPA. NSF EDU proposals must address FERPA compliance. De-identified aggregate data is generally shareable; individually identifiable records require strong access controls.</p>
+      </div>
+      <div class="col-panel blue-top">
+        <h3>🏛️ Indigenous &amp; Tribal Data Sovereignty</h3>
+        <p>NSF requires consultation with Tribal Nations for proposals impacting Tribal resources. Data sovereignty principles apply — communities may have rights over data collected from or about their members. Address this explicitly in your DMP if applicable.</p>
+      </div>
+    </div>
+    <div class="callout warning" style="margin-top:6px;">
+      <div class="callout-icon">⚠️</div>
+      <p><strong>Justifying restrictions:</strong> Privacy, security, IP, or legal constraints are acceptable reasons to limit sharing — but they must be detailed in the DMP at original proposal submission (PAPPG Supplement 2). "We haven't decided yet" is not acceptable. NSF expects a clear data sharing strategy before submission.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 13: COMPLIANCE -->
+<section class="slide" id="slide-12">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Peer Review &amp; Compliance</h2><div class="slide-subtitle">NSF DMPs are peer reviewed — and prior DMP performance affects future proposals</div></div>
+    <div class="timeline">
+      <div class="timeline-step"><div class="step-circle">📝</div><div class="step-title">Submit</div><div class="step-desc">2-page PDF in supplementary docs. No DMP = returned without review.</div></div>
+      <div class="timeline-step"><div class="step-circle">🔍</div><div class="step-title">Peer Review</div><div class="step-desc">Reviewers evaluate DMP as part of merit review. Generic plans hurt scores.</div></div>
+      <div class="timeline-step"><div class="step-circle">✅</div><div class="step-title">Award</div><div class="step-desc">DMP becomes part of award terms. Implement as proposed.</div></div>
+      <div class="timeline-step"><div class="step-circle">⚙️</div><div class="step-title">Implement</div><div class="step-desc">Deposit data, share publications in NSF-PAR, maintain documentation.</div></div>
+      <div class="timeline-step"><div class="step-circle">📊</div><div class="step-title">Report</div><div class="step-desc">Annual/final reports document compliance. NSF-PAR IDs auto-populate.</div></div>
+    </div>
+    <div class="two-col" style="margin-top:6px;">
+      <div class="callout info" style="margin:0;">
+        <div class="callout-icon">📋</div>
+        <p><strong>Prior NSF support:</strong> Subsequent proposals must describe DMP outcomes under "Results from Prior NSF Support." Poor compliance on past awards is visible to reviewers and can affect funding decisions.</p>
+      </div>
+      <div class="callout alert" style="margin:0;">
+        <div class="callout-icon">⚠️</div>
+        <p><strong>Non-compliance consequences:</strong> NSF may impose special conditions on awards, restrict future funding, or take other enforcement action. NSB and Committees of Visitors monitor DMP compliance agency-wide.</p>
+      </div>
+    </div>
+    <div class="callout warning" style="margin-top:10px;">
+      <div class="callout-icon">💡</div>
+      <p><strong>Modifying your DMP:</strong> Contact your NSF program officer if data management plans change significantly. Changes constituting a change in objectives or scope require NSF approval per PAPPG Chapter VII.B.1.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 14: SAMPLE DMP -->
+<section class="slide" id="slide-13">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Sample DMP Walk-Through</h2><div class="slide-subtitle">Example: NSF SBE grant — longitudinal survey study of civic engagement with survey data and interviews</div></div>
+    <div class="callout info" style="margin-bottom:16px;">
+      <div class="callout-icon">📌</div>
+      <p>This example addresses all five PAPPG elements plus SBE-specific human subjects requirements. Notice how each section is specific to the project — not generic boilerplate. This is what reviewers want to see.</p>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box">1</div>
+      <div class="element-title-box">Types of Products</div>
+      <div class="element-desc-box">Project will generate: (a) longitudinal survey data from 1,200 participants across 3 waves (SPSS and CSV formats, ~2GB); (b) semi-structured interview transcripts from 60 participants (de-identified Word/PDF, ~500MB); (c) Python and R analysis scripts. No physical samples or curriculum materials.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box" style="background:var(--tulane-blue-dark);">2</div>
+      <div class="element-title-box" style="color:var(--tulane-blue-dark);">Standards</div>
+      <div class="element-desc-box">Survey data will use DDI (Data Documentation Initiative) metadata standards, consistent with ICPSR deposit requirements. Interview transcripts accompanied by project-specific codebooks. Python/R code documented with inline comments and a README following community conventions. No consensus standard exists for qualitative transcripts; project documentation will follow QUAGOL guidelines.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box" style="background:var(--teal);">3</div>
+      <div class="element-title-box" style="color:var(--teal);">Access &amp; Sharing</div>
+      <div class="element-desc-box">De-identified survey data deposited in ICPSR as open access upon publication. Interview transcripts deposited in ICPSR restricted collection — access granted to researchers upon data use agreement approval. Analysis code shared publicly on GitHub with a Zenodo DOI at time of publication. All data available no later than time of associated publication per PAPPG Supplement 2.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box" style="background:var(--tulane-green-dark);">4</div>
+      <div class="element-title-box" style="color:var(--tulane-green-dark);">Reuse &amp; Redistribution</div>
+      <div class="element-desc-box">Survey data: CC0 (public domain). Interview transcripts: restricted reuse per ICPSR data use agreement; redistribution not permitted without PI approval. Code: MIT License — freely usable, modifiable, and redistributable with attribution. All products may be used for secondary analysis, replication, and teaching.</div>
+    </div>
+    <div class="element-row">
+      <div class="element-num-box">5</div>
+      <div class="element-title-box">Archiving &amp; Preservation</div>
+      <div class="element-desc-box">ICPSR provides 25-year minimum preservation commitment with DataCite DOIs. Zenodo provides CERN-maintained long-term preservation for code. Local copies maintained on Tulane institutional storage during award. All data available no later than the project end date.</div>
+    </div>
+    <div class="callout warning" style="margin-top:14px;">
+      <div class="callout-icon">👥</div>
+      <p><strong>Human subjects note:</strong> Consent forms include IRB-approved language permitting de-identified data sharing in a public repository and restricted sharing of interview transcripts under controlled access. Data de-identified per HIPAA Safe Harbor prior to deposit. IRB approval [date] covers all data management and sharing activities described.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 15: ACTIVITY 1 -->
+<section class="slide" id="slide-14">
+  <div class="activity-slide">
+    <div class="activity-badge">✏️ Activity 1 of 3</div>
+    <h2>Match the Element</h2>
+    <p class="activity-intro">Each statement below describes content from a real DMP. Identify which of the five PAPPG required elements (1–5) it belongs to.</p>
+    <div id="act1-items"></div>
+    <button class="complete-btn" onclick="completeActivity(1); goToSlide(15);">I'm Done — Next Activity &#8594;</button>
+  </div>
+</section>
+
+<!-- SLIDE 16: ACTIVITY 2 -->
+<section class="slide" id="slide-15">
+  <div class="activity-slide">
+    <div class="activity-badge">✏️ Activity 2 of 3</div>
+    <h2>Which Directorate?</h2>
+    <p class="activity-intro">For each research scenario, select the most relevant NSF directorate and note one key DMP requirement specific to that directorate.</p>
+    <div id="act2-items"></div>
+    <button class="complete-btn" onclick="completeActivity(2); goToSlide(16);">I'm Done — Next Activity &#8594;</button>
+  </div>
+</section>
+
+<!-- SLIDE 17: ACTIVITY 3 -->
+<section class="slide" id="slide-16">
+  <div class="activity-slide">
+    <div class="activity-badge">✏️ Activity 3 of 3</div>
+    <h2>Draft Your DMP</h2>
+    <p class="activity-intro">Using the five required elements as your framework, draft a brief outline of your own NSF DMP. Bullet points are fine. Focus on being specific to your project — avoid boilerplate language.</p>
+    <div class="activity-card">
+      <h3>Element 1 — Types of Research Products</h3>
+      <p>What data, samples, software, or other materials will your project generate? What formats and approximate volumes?</p>
+      <textarea class="text-input" id="draft1" placeholder="e.g., Survey data from 400 participants (CSV, ~100MB), Python analysis scripts, one physical soil core collection..."></textarea>
+    </div>
+    <div class="activity-card">
+      <h3>Elements 2–5 — Standards, Access, Reuse, Archiving</h3>
+      <p>What metadata standard will you use? Where will you deposit data? What license? Which repository?</p>
+      <textarea class="text-input" id="draft2" placeholder="Standards: e.g., DDI for survey data (ICPSR)&#10;Access/sharing: e.g., Open access via ICPSR; restricted for interviews&#10;Reuse: e.g., CC0 for quantitative data, MIT for code&#10;Archiving: e.g., ICPSR (25yr preservation), Zenodo for code..."></textarea>
+    </div>
+    <button class="submit-btn" onclick="showDraftFeedback();">✓ Mark Complete</button>
+    <div class="feedback-box correct" id="draft-fb" style="margin-top:12px; display:none;">Great work! This draft is a solid starting point. Bring it to a library consultation and open it in DMPTool for full guidance text before submission.</div>
+  </div>
+</section>
+
+<!-- SLIDE 18: RESOURCES -->
+<section class="slide" id="slide-17">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Tools &amp; Resources</h2><div class="slide-subtitle">You don't have to write your DMP from scratch — these tools and services are here to help</div></div>
+    <div class="two-col">
+      <div>
+        <div class="resource-card"><div class="resource-icon">🛠️</div><div><h3>DMPTool</h3><a href="https://dmptool.org" target="_blank">dmptool.org</a><p>NSF-specific templates with guidance for each element; sign in with Tulane email (SSO); share draft with library for review before submission</p></div></div>
+        <div class="resource-card"><div class="resource-icon">🏛️</div><div><h3>NSF Data Management Plan Page</h3><a href="https://www.nsf.gov/funding/data-management-plan" target="_blank">nsf.gov/funding/data-management-plan</a><p>Official guidance with links to all directorate-specific requirements — always check here before writing</p></div></div>
+        <div class="resource-card"><div class="resource-icon">📂</div><div><h3>re3data.org — Repository Registry</h3><a href="https://www.re3data.org" target="_blank">re3data.org</a><p>Search for domain-appropriate repositories by subject, data type, and access type; recommended by NSF ENG</p></div></div>
+        <div class="resource-card"><div class="resource-icon">🗃️</div><div><h3>NSF Public Access Repository (NSF-PAR)</h3><a href="https://par.nsf.gov" target="_blank">par.nsf.gov</a><p>Where to deposit publications — all NSF-funded AAMs deposited here upon acceptance, available at time of publication</p></div></div>
+      </div>
+      <div>
+        <div class="resource-card"><div class="resource-icon">📚</div><div><h3>PAPPG 24-1 &amp; Supplements</h3><a href="https://www.nsf.gov/policies/pappg/24-1" target="_blank">nsf.gov/policies/pappg/24-1</a><p>Full policy text; Supplement 1 (Dec 8, 2025) and Supplement 2 (Jan 22, 2026) take precedence for new awards</p></div></div>
+        <div class="resource-card"><div class="resource-icon">🎓</div><div><h3>Howard-Tilton Library — Research Data Services</h3><a href="https://library.tulane.edu" target="_blank">library.tulane.edu</a><p>1-on-1 DMP consultations, plan review, repository selection, metadata guidance, and instruction — contact us before you submit</p></div></div>
+        <div class="resource-card"><div class="resource-icon">📄</div><div><h3>NSF Sample DMPs</h3><a href="https://www.nsf.gov/funding/data-management-plan" target="_blank">nsf.gov → Data Management Plan</a><p>NSF-provided example plans: BIO (copepod ecology), GEO (Rio Grande geodatabase), and general research — excellent discipline models</p></div></div>
+        <div class="resource-card"><div class="resource-icon">🌐</div><div><h3>Research.gov DMP Tool (April 27, 2026)</h3><a href="https://www.research.gov" target="_blank">research.gov</a><p>New DMP creation tool launching April 27, 2026 — becomes required after that date. Upload as PDF until then.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 19: CHECKLIST -->
+<section class="slide" id="slide-18">
+  <div class="content-slide">
+    <div class="slide-header"><h2>Quick-Reference Checklist</h2><div class="slide-subtitle">Click each item to mark it complete — review before submitting your NSF proposal</div></div>
+    <div class="two-col">
+      <div>
+        <div class="checklist-section">
+          <h3>📋 Before You Write</h3>
+          <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Read the general PAPPG requirements (II.D.2.i.ii)</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Located and read directorate-specific DMP guidance page</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Read the specific program solicitation (FOA) for DMP instructions</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Opened DMPTool with Tulane SSO and selected NSF template</li>
+          </ul>
+        </div>
+        <div class="checklist-section">
+          <h3>📦 Element 1: Types of Products</h3>
+          <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Listed all data types, samples, software, and materials to be generated</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Specified file formats and estimated data volumes</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Addressed code, samples, and curriculum materials if applicable</li>
+          </ul>
+        </div>
+        <div class="checklist-section">
+          <h3>📐 Element 2: Standards</h3>
+          <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Named specific metadata standard(s) for each data type</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>If no standard exists, stated this and described documentation approach</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="checklist-section">
+          <h3>🔓 Element 3: Access &amp; Sharing</h3>
+          <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Named a specific repository for each major data type</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Stated datasets will be shared at time of publication (Supplement 2)</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Addressed privacy, confidentiality, or IP restrictions with justification</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Addressed human subjects protections if applicable</li>
+          </ul>
+        </div>
+        <div class="checklist-section">
+          <h3>♻️ Element 4: Reuse &amp; Redistribution</h3>
+          <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Specified a license for each data type (CC0, CC-BY, MIT, or restricted)</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Described attribution requirements and derivative work policies</li>
+          </ul>
+        </div>
+        <div class="checklist-section">
+          <h3>🗄️ Element 5: Archiving &amp; Preservation</h3>
+          <ul class="checklist">
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Named repository with long-term preservation commitment</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Plan is within 2 pages and project-specific (not generic boilerplate)</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Publications will be deposited in NSF-PAR upon acceptance</li>
+            <li onclick="toggleCheck(this)"><div class="check-box"></div>Requested library review of draft before submission</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 20: CLOSING -->
+<section class="slide" id="slide-19">
+  <div class="final-slide">
+    <h2>Questions?</h2>
+    <div class="final-sub">We're here to help you write a strong, competitive NSF DMP.</div>
+    <div class="contact-grid">
+      <div class="contact-item">📚 <a href="https://library.tulane.edu">Howard-Tilton Library · library.tulane.edu</a></div>
+      <div class="contact-item">🌐 <a href="https://www.nsf.gov/funding/data-management-plan">NSF DMP Page · nsf.gov</a></div>
+      <div class="contact-item">🛠️ <a href="https://dmptool.org">DMPTool · dmptool.org</a></div>
+      <div class="contact-item">📂 <a href="https://www.re3data.org">Repository Registry · re3data.org</a></div>
+      <div class="contact-item">🗃️ <a href="https://par.nsf.gov">NSF-PAR · par.nsf.gov</a></div>
+      <div class="contact-item">📄 <a href="https://www.nsf.gov/policies/pappg/24-1">PAPPG 24-1 &amp; Supplements</a></div>
+    </div>
+    <p style="color:rgba(255,255,255,0.5); font-size:0.88rem; margin-top:40px;">Howard-Tilton Memorial Library · Tulane University · 2026</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+const totalSlides = 20;
+let currentSlide = 0;
+
+const act1Data = [
+  { content: 'Survey data from 500 participants will be collected in SPSS format, approximately 1.5GB total.', correct: '1', explanation: '✅ Correct! Describing the type, format, and volume of a data product = Element 1: Types of Research Products.' },
+  { content: 'Data will be deposited in ICPSR under a CC0 license. Researchers may freely reuse, redistribute, and create derivatives without restriction.', correct: '4', explanation: '✅ Correct! Policies for reuse, redistribution, and derivatives = Element 4.' },
+  { content: 'Survey data will use DDI (Data Documentation Initiative) metadata standards, consistent with ICPSR submission requirements.', correct: '2', explanation: '✅ Correct! Identifying metadata standards for format and content = Element 2.' },
+  { content: 'Interview transcripts with potentially identifiable information will be deposited in ICPSR as a restricted collection. Access will require a signed data use agreement.', correct: '3', explanation: '✅ Correct! Describing access policies including privacy protections = Element 3.' },
+  { content: 'All data will be deposited in ICPSR, which provides 25-year minimum preservation and issues DataCite DOIs. Data will remain accessible after the award ends.', correct: '5', explanation: '✅ Correct! Plans for archiving, preservation, and long-term access = Element 5.' },
+];
+
+const act2Data = [
+  { scenario: 'A marine biologist is studying coral reef biodiversity in the Gulf of Mexico, collecting seawater samples and fish species occurrence data.', options: ['BIO — Biological Sciences', 'GEO — Geosciences (OCE)', 'SBE — Social Sciences', 'ENG — Engineering'], correct: 0, explanation: 'BIO is the best primary fit for biodiversity and species research (though GEO/OCE may also apply for oceanographic data). Key BIO requirements: species data in Darwin Core via GBIF; samples registered in SESAR; ecological data in EDI/DataONE using EML metadata.' },
+  { scenario: 'A sociologist is conducting a longitudinal survey study of community resilience after natural disasters, interviewing 300 affected households.', options: ['GEO — Geosciences', 'BIO — Biological Sciences', 'SBE — Social, Behavioral & Economic Sciences', 'OPP — Office of Polar Programs'], correct: 2, explanation: 'SBE is correct. Key SBE requirements: address human subjects protections and consent language; ICPSR recommended for quantitative survey data; address de-identification and controlled access for sensitive interview data; DDI metadata standard for ICPSR deposit.' },
+  { scenario: 'A geochemist is studying methane emissions from permafrost in Alaska using gas sensors and ice core samples collected during fieldwork.', options: ['SBE — Social Sciences', 'OPP — Office of Polar Programs', 'BIO — Biological Sciences', 'CISE — Computer Science'], correct: 1, explanation: 'OPP is correct for Arctic/polar research. Key OPP requirement: mandatory deposit to the Arctic Data Center (arcticdata.io); data publicly available within 2 years of collection; physical samples registered in SESAR with IGSNs; EML metadata required.' },
+];
+
+function buildAct1() {
+  const c = document.getElementById('act1-items');
+  if (!c) return;
+  act1Data.forEach((q, i) => {
+    c.innerHTML += `<div class="activity-card" style="margin-bottom:12px;">
+      <h3>Statement ${i+1}</h3>
+      <p style="margin-bottom:12px;font-style:italic;">"${q.content}"</p>
+      <p style="font-weight:700;color:var(--tulane-green);margin-bottom:8px;">Which PAPPG element does this address?</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${['1','2','3','4','5'].map(n => `<button class="option-btn" id="a1-${i}-${n}" onclick="checkA1(${i},'${n}')">Element ${n}</button>`).join('')}
+      </div>
+      <div class="feedback-box" id="a1fb-${i}"></div>
+    </div>`;
+  });
+}
+
+function checkA1(idx, ans) {
+  const q = act1Data[idx];
+  ['1','2','3','4','5'].forEach(n => { const b = document.getElementById(`a1-${idx}-${n}`); if(b) b.disabled=true; });
+  const btn = document.getElementById(`a1-${idx}-${ans}`);
+  const correct = ans === q.correct;
+  if(btn) btn.className = correct ? 'option-btn selected-correct' : 'option-btn selected-wrong';
+  const fb = document.getElementById(`a1fb-${idx}`);
+  fb.style.display='block'; fb.className=`feedback-box ${correct?'correct':'incorrect'}`;
+  fb.textContent = q.explanation;
+}
+
+function buildAct2() {
+  const c = document.getElementById('act2-items');
+  if (!c) return;
+  act2Data.forEach((q, i) => {
+    c.innerHTML += `<div class="activity-card" style="margin-bottom:12px;">
+      <h3>Scenario ${i+1}</h3>
+      <p style="margin-bottom:12px;">${q.scenario}</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${q.options.map((o,oi) => `<button class="option-btn" id="a2-${i}-${oi}" onclick="checkA2(${i},${oi})">${o}</button>`).join('')}
+      </div>
+      <div class="feedback-box" id="a2fb-${i}"></div>
+    </div>`;
+  });
+}
+
+function checkA2(idx, ans) {
+  const q = act2Data[idx];
+  q.options.forEach((_,oi) => { const b=document.getElementById(`a2-${idx}-${oi}`); if(b) b.disabled=true; });
+  const btn = document.getElementById(`a2-${idx}-${ans}`);
+  const correct = ans === q.correct;
+  if(btn) btn.className = correct ? 'option-btn selected-correct' : 'option-btn selected-wrong';
+  const fb = document.getElementById(`a2fb-${idx}`);
+  fb.style.display='block'; fb.className=`feedback-box ${correct?'correct':'incorrect'}`;
+  fb.innerHTML = q.explanation;
+}
+
+function showDraftFeedback() {
+  completeActivity(3);
+  document.getElementById('draft-fb').style.display='block';
+}
+
+function toggleCheck(el) { el.classList.toggle('done'); }
+
+function completeActivity(n) {
+  const dot = document.getElementById(`dot${n}`);
+  if(dot) { dot.className='tracker-dot completed'; dot.innerHTML='✓'; }
+}
+
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach((s,i) => s.classList.toggle('active', i===n));
+  currentSlide = n;
+  document.getElementById('slideSelector').value = n;
+  document.getElementById('prevBtn').disabled = n === 0;
+  document.getElementById('nextBtn').disabled = n === totalSlides-1;
+  document.getElementById('pageIndicator').textContent = `${n+1} / ${totalSlides}`;
+  document.getElementById('progressFill').style.width = `${((n+1)/totalSlides)*100}%`;
+  window.scrollTo(0,0);
+}
+function changeSlide(d) { showSlide(Math.max(0, Math.min(totalSlides-1, currentSlide+d))); }
+function goToSlide(n) { showSlide(parseInt(n)); }
+
+document.addEventListener('keydown', e => {
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  if(e.key==='ArrowRight' && currentSlide<totalSlides-1) changeSlide(1);
+  if(e.key==='ArrowLeft'  && currentSlide>0)            changeSlide(-1);
+  if(e.key==='Home') showSlide(0);
+  if(e.key==='End')  showSlide(totalSlides-1);
+});
+let tx=0;
+document.addEventListener('touchstart', e => tx=e.changedTouches[0].screenX);
+document.addEventListener('touchend', e => {
+  const dx=e.changedTouches[0].screenX-tx;
+  if(dx<-50 && currentSlide<totalSlides-1) changeSlide(1);
+  if(dx>50  && currentSlide>0)             changeSlide(-1);
+});
+
+buildAct1(); buildAct2(); showSlide(0);
+</script>
+</body>
+</html>
